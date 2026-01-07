@@ -49,7 +49,7 @@ pip install datacull
 
 ### Basic Usage
 
-Here's a minimal example using DataCull with a standard PyTorch dataset:
+Here's a minimal example using DataCull with a standard PyTorch dataset for dynamic data pruning:
 
 ```python
 import torch
@@ -60,10 +60,10 @@ from datacull import DCDataset, DCDataLoader, DCLogger, DCImportance
 dataset = DCDataset(your_pytorch_dataset)
 
 # 2. Create a logger to track per-sample metrics
-logger = DCLogger(trajectory_dir="./trajectories/", save_every_k_epoch=1)
+logger = DCLogger(trajectory_dir="./trajectory_directory/", save_every_k_epoch=1)
 
-# 3. Create a data loader with pruning
-dataloader = YourPruningMethod(
+# 3. Create a dataloader that inherits DCDataLoader and implements the compute_subset function
+dataloader = YourPruningDataLoader(
     dataset=dataset,
     pruning_rate=0.2,  # Remove 20% of samples
     batch_size=32,
@@ -76,46 +76,18 @@ for epoch in range(num_epochs):
         x, y, idx = batch  # idx contains sample indices
         
         # Your training code here
-        loss = model(x)
+        preds = model(x)
         
-        # Log per-sample metrics (e.g., loss)
-        logger.log_metric(epoch, idx, loss)
+        # Log per-sample metrics (e.g., preds)
+        logger.log_metric(epoch, idx, preds)
     
     # Compute importance scores
-importance_computer = YourImportanceMethod(...)
-importance_scores = importance_computer.compute_importance()
+    # YourImportanceMethod must inherit the DCImportance class and implement the compute_importance function
+    importance_computer = YourImportanceMethod(...)
+    importance_scores = importance_computer.compute_importance()
     
-# Resample dataset based on importance
-dataloader.resample(importance_scores)
-```
-
-### Using CCS (Coverage-centric Coreset Selection)
-
-```python
-from datacull import CCSDataLoader, AUMImportance
-
-# Create dataset and logger
-dataset = DCDataset(your_dataset)
-logger = DCLogger(trajectory_dir="./trajectories/")
-
-# Create CCS dataloader
-dataloader = CCSDataLoader(
-    dataset=dataset,
-    pruning_rate=0.3,  # Keep 70% of samples
-    batch_size=64
-)
-
-# Compute AUM importance scores
-importance = AUMImportance(
-    dataset=dataset,
-    trajectory_length=num_epochs,
-    logger_object=logger
-)
-
-aum_scores = importance.compute_importance()
-
-# Resample using AUM scores
-dataloader.resample(aum_scores)
+    # Resample dataset based on importance
+    dataloader.resample(importance_scores)
 ```
 
 ## Core Concepts
