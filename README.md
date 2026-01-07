@@ -20,12 +20,13 @@ DataCull comes with the **official implementation of the RCAP** (Robust Class-Aw
 
 ## Features
 
-- **Modular Design**: Clean abstractions for datasets, dataloaders, importance scoring, and logging
+- **Modular Design**: Clean abstractions for datasets, dataloaders, importance scoring, and logging. Decouples importance scoring and sampling logic, allowing you to mix and match the importance criteria and sampling strategies of different pruning methods.
 - **Multiple Pruning Algorithms**: Built-in implementations of state-of-the-art data pruning methods
-- **Dynamic and Static Pruning**: Support for both per-epoch re-sampling and one-time pruning
+- **Dynamic and Static Pruning**: Support for both per-epoch (or per-n-epochs) re-sampling and one-time pruning
 - **Per-Sample Tracking**: Automatically track metrics and importance scores for every sample across training epochs
-- **PyTorch and PyTorch Lightning Compatible**: Drop-in replacements for PyTorch Dataset and DataLoader
+- **PyTorch and PyTorch Lightning Compatible**: Drop-in replacements for PyTorch Dataset and DataLoader (no modification to existing workflows)
 - **Flexible Importance Scoring**: Extensible framework for custom importance computation methods
+- **Flexible Pruning**: Extensible framework for custom pruning logic
 
 ## Installation
 
