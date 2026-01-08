@@ -5,7 +5,7 @@
 [![Downloads](https://static.pepy.tech/badge/datacull)](https://pepy.tech/projects/datacull)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/atif-hassan/datacull/commits/master)
 # DataCull
-DataCull is a **A lightweight, flexible PyTorch framework for data pruning during model training**. It provides modular, composable components for implementing and experimenting with data pruning algorithms. Since DataCull decouples importance scoring and sampling logic, it allows, **for the very first time**, mixing and matching the importance criteria and sampling strategies of different pruning methods.
+DataCull is a **a lightweight, flexible PyTorch framework for data pruning during model training**. It provides modular, composable components for implementing and experimenting with data pruning algorithms. Since DataCull decouples importance scoring and sampling logic, it allows, **for the very first time**, mixing and matching the importance criteria and sampling strategies of different pruning methods.
 
 DataCull comes with the [**official implementation of the RCAP** (Robust Class-Aware Probabilistic) dynamic data pruning algorithm](https://proceedings.mlr.press/v286/hassan25a.html).
 
