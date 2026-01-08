@@ -87,7 +87,7 @@ from datacull import DCDataset
 wrapped_dataset = DCDataset(your_dataset)
 # Batch now returns: (*original_outputs, sample_index)
 ```
-
+---
 ### DCDataLoader
 
 A customizable DataLoader supporting both dynamic and static sample pruning with importance scores.
@@ -128,7 +128,7 @@ my_data_loader = MyPruner(DCDataset(my_dataset), batch_size)
 # Here, we assume that your pruning logic does not require importance scores
 my_data_loader.resample(None)
 ```
-
+---
 ### DCLogger
 
 Efficiently logs per-sample metrics across training epochs.
@@ -154,7 +154,7 @@ logger = DCLogger(trajectory_dir="./trajectories/", save_every_k_epoch=2)
 logger.log_metric(epoch, sample_indices, loss_values)
 # Creates: ./trajectories/epoch{E}.jsonl
 ```
-
+---
 ### DCImportance
 
 Base class for computing importance scores from logged trajectories.
@@ -198,9 +198,6 @@ importance_scores = importance_object.compute_importance()
 ### AUM (Area Under the Margin)
 Identifies easy-to-learn samples by computing the margin between true class logits and max other class logits.
 
-**Class**: `AUMImportance` from `datacull.methods.CCS`
-
-#### Example Usage
 ```python
 from datacull.methods.CCS import AUMImportance
 
@@ -209,11 +206,9 @@ scores = importance.compute_importance()
 ```
 
 ### CCS (Coverage-centric Coreset Selection)
-Uses AUM scores with stratified sampling to maintain dataset diversity at high pruning rates.
+Uses AUM scores with stratified sampling to maintain dataset diversity at high pruning rates. 
+For a complete working example using AUM, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/ccs.ipynb)
 
-**Class**: `CCSDataLoader` from `datacull.methods.CCS`
-
-#### Example Usage (for a complete working example using AUM, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/ccs.ipynb))
 ```python
 from datacull.methods.CCS import CCSDataLoader
 train_dataloader = CCSDataLoader(dataset=train_set, pruning_rate=0.3, beta=0.1, num_strata=50, descending=False, batch_size=128, num_workers=1)
@@ -222,10 +217,7 @@ train_dataloader.resample(scores)
 
 ### TDDS (Temporal Dual-Depth Scoring)
 Leverages temporal stability of predictions across epochs.
-
-**Classes**: `TDDSImportance`, `TDDSDataLoader` from `datacull.methods.TDDS`
-
-#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/tdds.ipynb))
+For a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/tdds.ipynb)
 ```python
 from datacull.methods.TDDS import TDDSImportance, TDDSDataLoader
 
@@ -237,10 +229,7 @@ train_dataloader.resample(scores)
 
 ### MetriQ
 Class-balanced pruning, inversely proportional to per-class validation accuracy.
-
-**Class**: `MetriQDataLoader` from `datacull.methods.MetriQ`
-
-#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/metriq.ipynb))
+For a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/metriq.ipynb)
 ```python
 from datacull.methods.MetriQ import MetriQDataLoader
 
@@ -253,10 +242,7 @@ train_dataloader.resample(None)
 
 ### RS2 (Repeated Random Sampling)
 Fast random sampling with optional stratification for class balance.
-
-**Class**: `RS2DataLoader` from `datacull.methods.RS2`
-
-#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rs2.ipynb))
+For a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rs2.ipynb)
 ```python
 from datacull.methods.RS2 import RS2DataLoader
 
@@ -266,10 +252,7 @@ train_dataloader.resample(None)
 
 ### RCAP (Relative Class-aware Adaptive Pruning)
 Dynamic class-aware probabilistic sampling using loss-based importance scores.
-
-**Classes**: `RCAPImportance`, `RCAPDataLoader` from `datacull.methods.RCAP`
-
-#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rcap.ipynb))
+For a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rcap.ipynb)
 ```python
 from datacull.methods.RCAP import RCAPImportance, RCAPDataLoader
 
