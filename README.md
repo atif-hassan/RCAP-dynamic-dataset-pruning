@@ -297,6 +297,9 @@ pruner.resample(None)
 - Pytorch specific exmaples
 - Implement more data pruning algorithms
 
+## Feature Requests
+You can open an issue or contact me at <atif.hit.hassan@gmail.com>
+
 ## Citation
 
 If you use DataCull in your research, please cite it as:
