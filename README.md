@@ -215,6 +215,7 @@ Uses AUM scores with stratified sampling to maintain dataset diversity at high p
 
 #### Example Usage (for a complete working example using AUM, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/ccs.ipynb))
 ```python
+from datacull.methods.CCS import CCSDataLoader
 train_dataloader = CCSDataLoader(dataset=train_set, pruning_rate=0.3, beta=0.1, num_strata=50, descending=False, batch_size=128, num_workers=1)
 train_dataloader.resample(scores)
 ```
@@ -226,7 +227,7 @@ Leverages temporal stability of predictions across epochs.
 
 #### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/tdds.ipynb))
 ```python
-from datacull.methods.TDDS import TDDSImportance
+from datacull.methods.TDDS import TDDSImportance, TDDSDataLoader
 
 importance_object = TDDSImportance(dataset=dataset, trajectory_length=num_epochs, window_size=5, decay=0.9, logger_object=logger)
 scores = importance_object.compute_importance()
@@ -280,6 +281,7 @@ train_dataloader.resample(importance_object.compute_importance())
 ### An example of using separate importance and sampling techniques
 ```python
 from datacull.methods.TDDS import TDDSImportance
+from datacull.methods.CCS import CCSDataLoader
 
 importance_object = TDDSImportance(dataset=dataset, trajectory_length=num_epochs, window_size=5, decay=0.9, logger_object=logger)
 scores = importance_object.compute_importance()
