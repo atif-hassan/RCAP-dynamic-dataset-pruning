@@ -1,47 +1,32 @@
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
+[![ForTheBadge built-with-love](http://ForTheBadge.com/images/badges/built-with-love.svg)](https://github.com/atif-hassan/)
+
+[![PyPI version shields.io](https://img.shields.io/pypi/v/datacull.svg)](https://pypi.org/project/datacull/)
+[![Downloads](https://static.pepy.tech/badge/datacull)](https://pepy.tech/projects/datacull)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/atif-hassan/datacull/commits/master)
 # DataCull
+DataCull is a **A lightweight, flexible PyTorch framework for data pruning during model training**. It provides modular, composable components for implementing and experimenting with data pruning algorithms. Since DataCull decouples importance scoring and sampling logic, it allows, **for the very first time**, mixing and matching the importance criteria and sampling strategies of different pruning methods.
 
-**A lightweight, flexible PyTorch framework for data pruning during model training.**
+DataCull comes with the [**official implementation of the RCAP** (Robust Class-Aware Probabilistic) dynamic data pruning algorithm](https://proceedings.mlr.press/v286/hassan25a.html).
 
-DataCull provides modular, composable components for implementing and experimenting with data pruning algorithms. It enables efficient training by identifying and removing low-value samples from your dataset on-the-fly. 
+It also includes the unofficial implementations of the following data pruning algorithms:
+- [CCS (Coverage-centric Coreset Selection for High Pruning Rates)](https://openreview.net/forum?id=QwKvL6wC8Yi)
+- [TDDS (Spanning Training Progress: Temporal Dual-Depth Scoring (TDDS) for Enhanced Dataset Pruning)](https://openaccess.thecvf.com/content/CVPR2024/papers/Zhang_Spanning_Training_Progress_Temporal_Dual-Depth_Scoring_TDDS_for_Enhanced_Dataset_CVPR_2024_paper.pdf)
+- [MetriQ (Robust Data Pruning: Uncovering and Overcoming Implicit Bias)](https://arxiv.org/html/2404.05579v1)
+- [RS2 (Repeated Random Sampling for Minimizing the Time-to-Accuracy of Learning)](https://openreview.net/forum?id=JnRStoIuTe)
 
-DataCull comes with the **official implementation of the RCAP** (Robust Class-Aware Probabilistic) dynamic data pruning algorithm.
-
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Core Concepts](#core-concepts)
-- [Available Methods](#available-methods)
-- [API Reference](#api-reference)
-- [Examples](#examples)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Features
 
 - **Modular Design**: Clean abstractions for datasets, dataloaders, importance scoring, and logging. Decouples importance scoring and sampling logic, allowing you to mix and match the importance criteria and sampling strategies of different pruning methods.
-- **Multiple Pruning Algorithms**: Built-in implementations of state-of-the-art data pruning methods
-- **Dynamic and Static Pruning**: Support for both per-epoch (or per-n-epochs) re-sampling and one-time pruning
-- **Per-Sample Tracking**: Automatically track metrics and importance scores for every sample across training epochs
-- **PyTorch and PyTorch Lightning Compatible**: Drop-in replacements for PyTorch Dataset and DataLoader (no modification to existing workflows)
-- **Flexible Importance Scoring**: Extensible framework for custom importance computation methods
-- **Flexible Pruning**: Extensible framework for custom pruning logic
+- **Multiple Pruning Algorithms**: Built-in implementations of state-of-the-art data pruning methods.
+- **Dynamic and Static Pruning**: Support for both per-epoch (or per-n-epochs) re-sampling and one-time pruning.
+- **Per-Sample Tracking**: Automatically track metrics and importance scores for every sample across training epochs.
+- **PyTorch and PyTorch Lightning Compatible**: Drop-in replacements for PyTorch Dataset and DataLoader (no modification to existing workflows).
+- **Flexible Importance Scoring**: Extensible framework for custom importance computation methods.
+- **Flexible Pruning**: Extensible framework for custom pruning logic.
 
-## Installation
-
-### Requirements
-
-- Python 3.8+
-- PyTorch 1.9+
-- NumPy
-- orjsonl
-- tqdm
-
-### From Source
-
-Clone the repository and install:
-
+## How to install?
 ```bash
 pip install datacull
 ```
@@ -67,8 +52,7 @@ logger = DCLogger(trajectory_dir="./trajectory_directory/", save_every_k_epoch=1
 dataloader = YourPruningDataLoader(
     dataset=dataset,
     pruning_rate=0.2,  # Remove 20% of samples
-    batch_size=32,
-    num_workers=4
+    batch_size=32
 )
 
 # 4. During training, log metrics and resample
@@ -91,7 +75,7 @@ for epoch in range(num_epochs):
     dataloader.resample(importance_scores)
 ```
 
-## Core Concepts
+## Core Classes
 
 ### DCDataset
 
@@ -102,33 +86,69 @@ from datacull import DCDataset
 
 wrapped_dataset = DCDataset(your_dataset)
 # Batch now returns: (*original_outputs, sample_index)
-sample = wrapped_dataset[0]  # Returns (x, y, idx) instead of (x, y)
 ```
 
 ### DCDataLoader
 
-A customizable DataLoader supporting dynamic sample pruning with importance scores:
+A customizable DataLoader supporting both dynamic and static sample pruning with importance scores.
+```python
+__init__(self, dataset: DCDataset, pruning_rate: float, static: bool, **kwargs)
+```
+- **datatset:** `DCDataset` Any Pytorch dataset wrapped with the DCDataset class.
+- **prunting_rate:** `float (0,1)` The fraction of samples to remove.
+- **static:** `bool` This variable decides whether to resample a new subset during training (dynamic mode) or resample only once (static mode).
 
-- **Static Mode**: Prune once and reuse the same subset every epoch
-- **Dynamic Mode**: Recompute the subset every epoch based on updated importance scores
+```python
+# This function needs to be implemented by the user when creating their own pruning algorithm
+# It holds the pruning logic
+# And, returns a list of indices (a subset) which determines which samples to keep
+compute_subset(self, sample_importance: list)
+```
+- **sample_importance:** `list` A list containing an importance score corresponding to each sample in the dataset.
 
+```python
+# This function calls compute_subset
+# It also determines whether to sample once (static) or more (dynamic)
+resample(self, sample_importance: list)
+```
+- **sample_importance:** `list` A list containing an importance score corresponding to each sample in the dataset.
+
+#### Example Usage
 ```python
 # Implement compute_subset() to define your pruning strategy
 class MyPruner(DCDataLoader):
     def compute_subset(self, sample_importance):
+        # Write pruning logic using or not using sample_importance
         # Return indices of samples to keep
         return indices_to_keep
+
+# create the data loader
+my_data_loader = MyPruner(DCDataset(my_dataset), batch_size)
+# Select a new subset
+# Here, we assume that your pruning logic does not require importance scores
+my_data_loader.resample(None)
 ```
 
 ### DCLogger
 
-Efficiently logs per-sample metrics across training epochs:
+Efficiently logs per-sample metrics across training epochs.
+```python
+__init__(self, trajectory_dir: str, save_every_k_epoch: int=1)
+```
+- **trajectory_dir:** `string` The directory where a model's training metrics will be stored.
+- **save_every_k_epoch:** `int (default=1)` Save metrics every k epochs.
 
 ```python
-logger = DCLogger(
-    trajectory_dir="./trajectories/",
-    save_every_k_epoch=1  # Save metrics every epoch
-)
+# This function needs to be called to save a given metric during training
+log_metric(self, epoch: int, sample_idx: torch.Tensor, metric: torch.Tensor)
+```
+- **epoch:** `int` The current epoch number.
+- **sample_idx:** `torch.Tensor` A batch of indices (provided automatically by the DCDataset class).
+- **metric:** `torch.Tensor` A batch of metrics to log such as predictions or loss.
+
+#### Example Usage
+```python
+logger = DCLogger(trajectory_dir="./trajectories/", save_every_k_epoch=2)
 
 # During training
 logger.log_metric(epoch, sample_indices, loss_values)
@@ -137,232 +157,138 @@ logger.log_metric(epoch, sample_indices, loss_values)
 
 ### DCImportance
 
-Base class for computing importance scores from logged trajectories:
+Base class for computing importance scores from logged trajectories.
+```python
+__init__(self, dataset: DCDataset, window_size: int, logger_object: DCLogger, flush: bool = False)
+```
+- **dataset:** `DCDataset` A Pytorch dataset wrapped by the DCDataset class.
+- **window_size:** `int` Determines the number of consecutive epochs to extract.
+- **loggret_object:** `DCLogger` A DCLogger object to determine the logging directory and which epochs have been saved.
+- **flush:** `bool (default False)` A boolean variable that determines whether to delete the metrics (trajectory segment) that have been currently read into memory, from disk (useful for dynamic methods)
 
 ```python
-importance = YourImportanceMethod(
-    dataset=dataset,
-    window_size=5,  # Look at 5 consecutive epochs
-    logger_object=logger
-)
+# Returns the segment `start_epoch:start_epoch + window_size` from the trajectory
+extract_trajectory_segment(self, start_epoch: int)
+```
+- **start_epoch:** `int` Determines the point in the trajectory to extract the current segment from.
 
-scores = importance.compute_importance()  # Shape: (num_samples,)
+```python
+# This function needs to be implemented by the user
+# Returns a list containing the importance score for each sample.
+compute_importance(self)
+```
+
+#### Example Usage
+```python
+# Create your sample importance class
+class YourImportanceMethod(DCImportance):
+    def compute_importance():
+        for epoch in range(max_epochs - window_size + 1)
+            segment = self.extract_trajectory_segment(epoch)
+            # Write your sample importance logic here
+        return sample_importance
+
+# Create you sample importance object
+importance_object = YourImportanceMethod(dataset=dataset, window_size=5, logger_object=logger)
+importance_scores = importance_object.compute_importance()
 ```
 
 ## Available Methods
 
 ### AUM (Area Under the Margin)
+Identifies easy-to-learn samples by computing the margin between true class logits and max other class logits.
 
 **Class**: `AUMImportance` from `datacull.methods.CCS`
 
-Identifies easy-to-learn samples by computing the margin between true class logits and max other class logits.
-
+#### Example Usage
 ```python
 from datacull.methods.CCS import AUMImportance
 
-importance = AUMImportance(
-    dataset=dataset,
-    trajectory_length=num_epochs,
-    logger_object=logger
-)
+importance = AUMImportance(dataset=dataset, trajectory_length=num_epochs, logger_object=logger)
 scores = importance.compute_importance()
 ```
 
 ### CCS (Coverage-centric Coreset Selection)
+Uses AUM scores with stratified sampling to maintain dataset diversity at high pruning rates.
 
 **Class**: `CCSDataLoader` from `datacull.methods.CCS`
 
-Uses AUM scores with stratified sampling to maintain dataset diversity.
+#### Example Usage (for a complete working example using AUM, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/ccs.ipynb))
+```python
+train_dataloader = CCSDataLoader(dataset=train_set, pruning_rate=0.3, beta=0.1, num_strata=50, descending=False, batch_size=128, num_workers=1)
+train_dataloader.resample(scores)
+```
 
 ### TDDS (Temporal Dual-Depth Scoring)
+Leverages temporal stability of predictions across epochs.
 
 **Classes**: `TDDSImportance`, `TDDSDataLoader` from `datacull.methods.TDDS`
 
-Leverages temporal stability of predictions across epochs.
-
+#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/tdds.ipynb))
 ```python
 from datacull.methods.TDDS import TDDSImportance
 
-importance = TDDSImportance(
-    dataset=dataset,
-    trajectory_length=num_epochs,
-    window_size=5,
-    decay=0.9,
-    logger_object=logger
-)
+importance_object = TDDSImportance(dataset=dataset, trajectory_length=num_epochs, window_size=5, decay=0.9, logger_object=logger)
+scores = importance_object.compute_importance()
+train_dataloader = TDDSDataLoader(dataset=train_set, pruning_rate=0.3, batch_size=128, num_workers=1)
+train_dataloader.resample(scores)
 ```
 
 ### MetriQ
+Class-balanced pruning, inversely proportional to per-class validation accuracy.
 
 **Class**: `MetriQDataLoader` from `datacull.methods.MetriQ`
 
-Class-balanced pruning inversely proportional to per-class validation accuracy.
-
+#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/metriq.ipynb))
 ```python
 from datacull.methods.MetriQ import MetriQDataLoader
 
 # Requires validation accuracy per class
 class_wise_acc = np.array([0.95, 0.80, 0.88])
 
-dataloader = MetriQDataLoader(
-    dataset=dataset,
-    pruning_rate=0.3,
-    class_wise_acc=class_wise_acc,
-    batch_size=64
-)
+train_dataloader = MetriQDataLoader(dataset=dataset, pruning_rate=0.3, class_wise_acc=class_wise_acc, batch_size=64, num_workers=1)
+train_dataloader.resample(None)
 ```
 
 ### RS2 (Repeated Random Sampling)
+Fast random sampling with optional stratification for class balance.
 
 **Class**: `RS2DataLoader` from `datacull.methods.RS2`
 
-Fast random sampling with optional stratification for class balance.
-
+#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rs2.ipynb))
 ```python
 from datacull.methods.RS2 import RS2DataLoader
 
-dataloader = RS2DataLoader(
-    dataset=dataset,
-    pruning_rate=0.5,
-    sampling_with_replacement=False,
-    stratify=True,
-    batch_size=64
-)
+dataloader = RS2DataLoader(dataset=dataset, pruning_rate=0.3, sampling_with_replacement=False, stratify=False, batch_size=64, num_workers=1)
+train_dataloader.resample(None)
 ```
 
 ### RCAP (Relative Class-aware Adaptive Pruning)
+Dynamic class-aware probabilistic sampling using loss-based importance scores.
 
 **Classes**: `RCAPImportance`, `RCAPDataLoader` from `datacull.methods.RCAP`
 
-Dynamic class-aware probabilistic sampling using loss-based importance scores.
-
+#### Example Usage  (for a complete working example, [click here](https://github.com/atif-hassan/RCAP-dynamic-dataset-pruning/blob/main/examples/pytorch-lightning/rcap.ipynb))
 ```python
 from datacull.methods.RCAP import RCAPImportance, RCAPDataLoader
 
-importance = RCAPImportance(
-    dataset=dataset,
-    logger_object=logger,
-    beta=2.0,  # Temperature parameter
-    clipping_threshold=np.log(num_classes)
-)
-
-dataloader = RCAPDataLoader(
-    dataset=dataset,
-    pruning_rate=0.3,
-    batch_size=64
-)
+importance_object = RCAPImportance(dataset=dataset, logger_object=logger, beta=2.0, clipping_threshold=None)
+train_dataloader = RCAPDataLoader(dataset=dataset, pruning_rate=0.3, batch_size=64, num_workers=1)
+train_dataloader.resample(importance_object.compute_importance())
 ```
-
-## API Reference
-
-### Core Classes
-
-#### DCDataset
-
+---
+### An example of using separate importance and sampling techniques
 ```python
-DCDataset(custom_dataset)
+from datacull.methods.TDDS import TDDSImportance
+
+importance_object = TDDSImportance(dataset=dataset, trajectory_length=num_epochs, window_size=5, decay=0.9, logger_object=logger)
+scores = importance_object.compute_importance()
+train_dataloader = CCSDataLoader(dataset=train_set, pruning_rate=0.3, beta=0.1, num_strata=50, descending=False, batch_size=128, num_workers=1)
+train_dataloader.resample(scores)
 ```
+---
 
-Wraps a PyTorch dataset to append sample indices.
-
-**Parameters:**
-- `custom_dataset` (Dataset): Any PyTorch-compliant dataset
-
-**Returns:** Modified dataset where each sample includes the original index
-
-#### DCDataLoader
-
-```python
-DCDataLoader(dataset, pruning_rate, static, **kwargs)
-```
-
-Base class for pruning-aware dataloaders.
-
-**Parameters:**
-- `dataset` (DCDataset): Wrapped dataset
-- `pruning_rate` (float): Fraction of samples to keep (0.0-1.0)
-- `static` (bool): If True, compute subset once; if False, every epoch
-- `**kwargs`: Standard DataLoader arguments
-
-**Methods:**
-- `compute_subset(sample_importance)`: Implement to define pruning strategy
-- `resample(sample_importance)`: Update loader with pruned subset
-
-#### DCLogger
-
-```python
-DCLogger(trajectory_dir, save_every_k_epoch=1)
-```
-
-Logs per-sample metrics to disk.
-
-**Parameters:**
-- `trajectory_dir` (str): Directory to store trajectory JSONL files
-- `save_every_k_epoch` (int): Save interval
-
-**Methods:**
-- `log_metric(epoch, sample_idx, metric)`: Log metrics for a batch
-
-#### DCImportance
-
-```python
-DCImportance(dataset, window_size, logger_object, flush=False)
-```
-
-Base class for computing importance scores.
-
-**Parameters:**
-- `dataset` (DCDataset): The dataset
-- `window_size` (int): Number of epochs to examine
-- `logger_object` (DCLogger): Logger with trajectory data
-- `flush` (bool): Delete trajectory files after reading
-
-**Methods:**
-- `compute_importance()`: Return importance scores (must be overridden)
-- `extract_trajectory_segment(start_epoch)`: Load logged metrics
-
-## Examples
-
-### Complete Training Loop with CCS
-
-```python
-import torch
-import numpy as np
-from torch import nn
-from datacull import DCDataset, DCLogger
-from datacull.methods.CCS import CCSDataLoader, AUMImportance
-
-# Setup
-dataset = DCDataset(your_dataset)
-logger = DCLogger(trajectory_dir="./trajectories/")
-dataloader = CCSDataLoader(dataset, pruning_rate=0.2, batch_size=32)
-
-model = YourModel()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-
-# Training
-for epoch in range(10):
-    for batch in dataloader:
-        x, y, idx = batch
-        
-        logits = model(x)
-        loss = nn.functional.cross_entropy(logits, y)
-        
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-        
-        # Log logits for importance computation
-        logger.log_metric(epoch, idx, logits.detach())
-    
-    # Compute importance and resample
-    if epoch % 2 == 0:
-        importance = AUMImportance(dataset, 10, logger)
-        scores = importance.compute_importance()
-        dataloader.resample(scores)
-```
-
-### Custom Pruning Strategy
+## Custom Pruning Strategy Example
 
 ```python
 import numpy as np
@@ -382,38 +308,21 @@ pruner = RandomPruner(dataset, pruning_rate=0.3, batch_size=64)
 pruner.resample(None)
 ```
 
-## Contributing
-
-We welcome contributions! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make your changes and add tests
-4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License. See LICENSE file for details.
+## Future Ideas
+- Pytorch specific exmaples
+- Implement more data pruning algorithms
 
 ## Citation
 
 If you use DataCull in your research, please cite it as:
 
 ```bibtex
-@software{datacull2024,
-  title = {DataCull: A Framework for Data Pruning and Curation},
-  year = {2024},
+@inproceedings{hassanrcap,
+  title={RCAP: Robust, Class-Aware, Probabilistic Dynamic Dataset Pruning},
+  author={Hassan, Atif and Khare, Swanand and Paik, Jiaul H},
+  booktitle={The 41st Conference on Uncertainty in Artificial Intelligence}
 }
 ```
-
-## Support
-
-For issues, questions, or suggestions:
-
-- Open an issue on GitHub
-- Check existing documentation and examples
-- Review the docstrings in source code for API details
-
 ---
 
 **Happy pruning!** 🌱
