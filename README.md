@@ -309,6 +309,3 @@ If you use DataCull in your research, please cite it as:
 }
 ```
 [Alternatively, use the following DBLP Bibtex link](https://dblp.org/rec/conf/uai/HassanKP25.html?view=bibtex)
----
-
-**Happy pruning!** 🌱
