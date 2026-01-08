@@ -323,6 +323,7 @@ If you use DataCull in your research, please cite it as:
   booktitle={The 41st Conference on Uncertainty in Artificial Intelligence}
 }
 ```
+[Alternatively, use the following DBLP Bibtex link](https://dblp.org/rec/conf/uai/HassanKP25.html?view=bibtex)
 ---
 
 **Happy pruning!** 🌱
